@@ -13,15 +13,141 @@ import { ethers } from "ethers";
 declare module "hardhat/types/runtime" {
   interface HardhatEthersHelpers extends HardhatEthersHelpersBase {
     getContractFactory(
-      name: "Greeter",
+      name: "IFlashLoanReceiver",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Greeter__factory>;
+    ): Promise<Contracts.IFlashLoanReceiver__factory>;
+    getContractFactory(
+      name: "IPool",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IPool__factory>;
+    getContractFactory(
+      name: "IPoolAddressesProvider",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IPoolAddressesProvider__factory>;
+    getContractFactory(
+      name: "IPoolDataProvider",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IPoolDataProvider__factory>;
+    getContractFactory(
+      name: "IEACAggregatorProxy",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IEACAggregatorProxy__factory>;
+    getContractFactory(
+      name: "IRewardsController",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IRewardsController__factory>;
+    getContractFactory(
+      name: "IRewardsDistributor",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IRewardsDistributor__factory>;
+    getContractFactory(
+      name: "ITransferStrategyBase",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ITransferStrategyBase__factory>;
+    getContractFactory(
+      name: "Ownable",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Ownable__factory>;
+    getContractFactory(
+      name: "ERC20",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ERC20__factory>;
+    getContractFactory(
+      name: "IERC20Permit",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC20Permit__factory>;
+    getContractFactory(
+      name: "IERC20Metadata",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC20Metadata__factory>;
+    getContractFactory(
+      name: "IERC20",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC20__factory>;
+    getContractFactory(
+      name: "AaveTractor",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.AaveTractor__factory>;
+    getContractFactory(
+      name: "ForceSend",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ForceSend__factory>;
 
     getContractAt(
-      name: "Greeter",
+      name: "IFlashLoanReceiver",
       address: string,
       signer?: ethers.Signer
-    ): Promise<Contracts.Greeter>;
+    ): Promise<Contracts.IFlashLoanReceiver>;
+    getContractAt(
+      name: "IPool",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IPool>;
+    getContractAt(
+      name: "IPoolAddressesProvider",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IPoolAddressesProvider>;
+    getContractAt(
+      name: "IPoolDataProvider",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IPoolDataProvider>;
+    getContractAt(
+      name: "IEACAggregatorProxy",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IEACAggregatorProxy>;
+    getContractAt(
+      name: "IRewardsController",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IRewardsController>;
+    getContractAt(
+      name: "IRewardsDistributor",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IRewardsDistributor>;
+    getContractAt(
+      name: "ITransferStrategyBase",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ITransferStrategyBase>;
+    getContractAt(
+      name: "Ownable",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Ownable>;
+    getContractAt(
+      name: "ERC20",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ERC20>;
+    getContractAt(
+      name: "IERC20Permit",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IERC20Permit>;
+    getContractAt(
+      name: "IERC20Metadata",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IERC20Metadata>;
+    getContractAt(
+      name: "IERC20",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IERC20>;
+    getContractAt(
+      name: "AaveTractor",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.AaveTractor>;
+    getContractAt(
+      name: "ForceSend",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ForceSend>;
 
     // default types
     getContractFactory(
