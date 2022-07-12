@@ -46,7 +46,8 @@ export const queryOneInch = async (
     `&amount=${amount.toString()}` +
     `&fromAddress=${constants.AddressZero}` + // The actual address is the SC
     `&slippage=30` + // Does not matter as we enforce it separately
-    `&disableEstimate=true`; // Don't check allowances and balances
+    `&disableEstimate=true` + // Don't check allowances and balances
+    `&allowPartialFill=false`; // Don't allow partial fill
   //   query += `&protocols=${protocol}`
   //   query += `&mainRouteParts=1`
   //   query += `&parts=1`

@@ -1,27 +1,28 @@
 import { ethers } from "hardhat";
 
 import { AaveTractor } from "../src/types";
-import { AaveTractorAddress, USDC } from "../test/constants";
-import { numberToTokenAmount } from "../test/utils";
+import { AaveTractorAddress, USDC, USDT } from "../test/constants";
+import { numberToTokenAmount, queryOneInch } from "../test/utils";
 
-const openUSDCvsUSDCPosition = async () => {
+const openUSDCvsUSDTPosition = async () => {
   const aaveTractor: AaveTractor = await ethers.getContractAt("AaveTractor", AaveTractorAddress);
 
   const supply = USDC;
-  const borrow = USDC;
+  const borrow = USDT;
   const principal = 3;
   const leverage = 20;
+  const slippage = 0.03;
 
   const principalBN = numberToTokenAmount(principal, supply);
-  const supplyAmountBN = numberToTokenAmount(principal + principal * leverage, supply);
+  const supplyAmountBN = numberToTokenAmount(principal + principal * leverage * (1 - slippage), supply);
   const borrowAmountBN = numberToTokenAmount(principal * leverage, borrow);
-  const exchangeData = "0x";
+  const exchangeData = await queryOneInch(borrow.address, supply.address, borrowAmountBN);
 
   // Only approve first time use
   // const supplySC = (await ethers.getContractAt("IERC20", USDC.address)) as IERC20;
   // await supplySC.approve(aaveTractor.address, ethers.constants.MaxUint256);
 
-  await aaveTractor.openPosition(
+  const tx = await aaveTractor.openPosition(
     supply.address,
     principalBN,
     supplyAmountBN,
@@ -29,6 +30,7 @@ const openUSDCvsUSDCPosition = async () => {
     borrowAmountBN,
     exchangeData,
   );
+  console.log(await tx.wait());
 };
 
-openUSDCvsUSDCPosition().catch(console.log);
+openUSDCvsUSDTPosition().catch(console.log);
