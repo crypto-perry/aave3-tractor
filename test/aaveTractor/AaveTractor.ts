@@ -4,7 +4,7 @@ import { formatUnits } from "ethers/lib/utils";
 import { artifacts, ethers, waffle } from "hardhat";
 
 import { AaveTractor, IERC20 } from "../../src/types";
-import { DAI, USDC, USDT } from "../constants";
+import { USDC, USDT } from "../constants";
 import { fund, numberToTokenAmount, queryOneInch } from "../utils";
 
 describe("Unit Tests Aave Tractor", function () {
@@ -16,7 +16,6 @@ describe("Unit Tests Aave Tractor", function () {
 
     await fund(signer.address, USDC, 100_000);
     await fund(signer.address, USDT, 100_000);
-    await fund(signer.address, DAI, 100_000);
   });
 
   const TABLE = [
@@ -35,13 +34,6 @@ describe("Unit Tests Aave Tractor", function () {
       borrow: USDT,
       slippage: 0.03,
     },
-    // {
-    //   principal: 100,
-    //   leverage: 7,
-    //   supply: USDC,
-    //   borrow: DAI,
-    //   slippage: 0.01,
-    // },
   ];
 
   for (const { principal, supply, borrow, leverage, slippage } of TABLE) {

@@ -42,10 +42,6 @@ const config: HardhatUserConfig = {
         accountsBalance: parseEther("100000").toString(),
       },
     },
-    // polygon: {
-    //   url: rpcUrl,
-    //   accounts: [process.env.SECRET_KEY!],
-    // },
   },
   paths: {
     artifacts: "./artifacts",
@@ -79,5 +75,12 @@ const config: HardhatUserConfig = {
     target: "ethers-v5",
   },
 };
+
+if (process.env.SECRET_KEY) {
+  config.networks!["polygon"] = {
+    url: rpcUrl,
+    accounts: [process.env.SECRET_KEY!],
+  };
+}
 
 export default config;

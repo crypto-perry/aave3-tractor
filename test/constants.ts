@@ -19,9 +19,4 @@ export const USDT: Token = {
   provider: "0x0D0707963952f2fBA59dD06f2b425ace40b492Fe",
 };
 
-export const DAI: Token = {
-  address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
-  symbol: "DAI",
-  decimals: 18,
-  provider: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
-};
+export const AaveTractorAddress = "0xebE2829702A10B5C2420eE220157B13FCCb15d0E";

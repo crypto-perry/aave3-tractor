@@ -15,29 +15,32 @@ contract AaveTractor is Ownable, IFlashLoanReceiver {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
+    // Aave V3 addresses
     IPool public constant POOL = IPool(0x794a61358D6845594F94dc1DB02A252b5b4814aD);
     IPoolAddressesProvider public constant ADDRESSES_PROVIDER =
         IPoolAddressesProvider(0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb);
-    address public constant ONE_INCH = 0x1111111254fb6c44bAC0beD2854e76F90643097d;
-    uint256 internal constant MANTISSA = 1e18;
 
+    // Aave constants
     uint16 internal constant REFERRAL_CODE = 0;
-
     uint256 internal constant FLASHLOAN_BORROW_RATE_MODE = 0;
     uint256 internal constant VARIABLE_BORROW_RATE_MODE = 2;
     uint8 internal constant EMODE_CATEGORY_STABLECOINS = 1;
 
-    // When openAction is true, exchangeAmount is used to pass the minimum expected amount of supplyToken
-    // When openAction is false, exchangeAmount is the amount of supplyToken to be exchanged towards flashLoan repayment
+    // 1inch router V4
+    address public constant ONE_INCH = 0x1111111254fb6c44bAC0beD2854e76F90643097d;
+
+    // Struct to hold the extra params needed in the flash loan execution for closing or opening a position
     struct FlashLoanData {
         bool openAction;
         address supplyToken;
-        uint256 exchangeAmount; // min amount
+        // The minimum amount of supply token required (when exchanging from borrow to supply)
+        //  or the amount to exhange (from supply to borrow)
+        uint256 supplyTokenAmount;
         bytes exchangeData;
     }
 
     constructor() {
-        // Specify that we are operating on stablecoins only
+        // Specify that we are operating on stablecoins only to get the 97% collateral factor (up to 33.33x leverage)
         POOL.setUserEMode(EMODE_CATEGORY_STABLECOINS);
     }
 
@@ -54,11 +57,10 @@ contract AaveTractor is Ownable, IFlashLoanReceiver {
         require(minSupplyAmount >= principalAmount, "supply amount too small!");
         require(borrowAmount > 0, "borrowAmount must be positive!");
 
+        // Take principal from user
         IERC20(supplyToken).transferFrom(msg.sender, address(this), principalAmount);
 
-        // @dev: aave 's flashloan interface requires arrays as inputs
-        // Unfortunately there is no way to inline a dynamic array, so we need to use
-        // toArray to workaround it. Ugly but needed
+        // Request a flash loan for the borrowAmount and repay it by providing collateral
         POOL.flashLoan(
             address(this),
             toArray(borrowToken),
@@ -69,7 +71,7 @@ contract AaveTractor is Ownable, IFlashLoanReceiver {
                 FlashLoanData({
                     openAction: true,
                     supplyToken: supplyToken,
-                    exchangeAmount: minSupplyAmount - principalAmount,
+                    supplyTokenAmount: minSupplyAmount - principalAmount,
                     exchangeData: exchangeData
                 })
             ),
@@ -84,13 +86,12 @@ contract AaveTractor is Ownable, IFlashLoanReceiver {
         uint256 borrowRepayAmount,
         bytes calldata exchangeData
     ) external onlyOwner {
-        // Pay back borrow first
+        // Pay back debt
         if (supplyToken == borrowToken) {
+            // If same token, use the new Aave V3 feature repatWithATokens for guaranteed liquidity and lower gas.
             POOL.repayWithATokens(supplyToken, type(uint256).max, VARIABLE_BORROW_RATE_MODE);
         } else {
-            // @dev: aave 's flashloan interface requires arrays as inputs
-            // Unfortunately there is no way to inline a dynamic array, so we need to use
-            // toArray to workaround it. Ugly but needed
+            // Request a flashloan of borrowRepayAmount and repay it instantly
             POOL.flashLoan(
                 address(this),
                 toArray(borrowToken),
@@ -101,7 +102,7 @@ contract AaveTractor is Ownable, IFlashLoanReceiver {
                     FlashLoanData({
                         openAction: false,
                         supplyToken: supplyToken,
-                        exchangeAmount: supplyExchangeAmount,
+                        supplyTokenAmount: supplyExchangeAmount,
                         exchangeData: exchangeData
                     })
                 ),
@@ -114,37 +115,45 @@ contract AaveTractor is Ownable, IFlashLoanReceiver {
     }
 
     function executeOperation(
-        address[] calldata assets, // assets[0] is the borrowToken
+        address[] calldata assets, // assets[0] is the flash loan / borrow token
         uint256[] calldata amounts, // amounts[0] is the flash loan amount
         uint256[] calldata premiums, // premium[0] is the fee on the flash loan
         address, /*initiator*/
         bytes calldata callbackData
     ) external override returns (bool) {
-        require(msg.sender == address(POOL), "Only Aave V3 can call!");
+        require(msg.sender == address(POOL), "only Aave V3 can call!");
 
         FlashLoanData memory flash = abi.decode(callbackData, (FlashLoanData));
 
         if (flash.openAction) {
             uint256 supplyTokenBalance = IERC20(flash.supplyToken).balanceOf(address(this));
+            // If different tokens, swap supply yo borrow to cover the flash lk
             if (flash.supplyToken != assets[0]) {
                 supplyTokenBalance = supplyTokenBalance.add(
-                    swap(assets[0], amounts[0], flash.supplyToken, flash.exchangeAmount, flash.exchangeData)
+                    swap(assets[0], amounts[0], flash.supplyToken, flash.supplyTokenAmount, flash.exchangeData)
                 );
             }
+            // Provide collateral to cover the flash loan
             supply(flash.supplyToken, supplyTokenBalance);
         } else {
+            // Repay the debt
             IERC20(assets[0]).safeIncreaseAllowance(address(POOL), amounts[0]);
             POOL.repay(assets[0], amounts[0], VARIABLE_BORROW_RATE_MODE, address(this));
-            POOL.withdraw(flash.supplyToken, flash.exchangeAmount, address(this));
-            uint256 flashRepayAmount = amounts[0] + premiums[0];
-            swap(flash.supplyToken, flash.exchangeAmount, assets[0], flashRepayAmount, flash.exchangeData);
-            uint256 borrowTokenBalance = IERC20(assets[0]).balanceOf(address(this));
 
-            // Send leftovers to owner
-            IERC20(assets[0]).safeTransfer(owner(), borrowTokenBalance - flashRepayAmount);
+            // Redeem all the collateral supplied
+            POOL.withdraw(flash.supplyToken, flash.supplyTokenAmount, address(this));
+
+            // Exchange the collateral to flash loaned token s.t. it covers the flash loan
+            uint256 flashRepayAmount = amounts[0] + premiums[0];
+            swap(flash.supplyToken, flash.supplyTokenAmount, assets[0], flashRepayAmount, flash.exchangeData);
 
             // Allow POOL to pull flash loan repayment
             IERC20(assets[0]).safeIncreaseAllowance(address(POOL), flashRepayAmount);
+
+            uint256 borrowTokenBalance = IERC20(assets[0]).balanceOf(address(this));
+            // Send leftovers to owner (Due to slippage and interest accrual margins,
+            // there will always be some leftover amounts.)
+            IERC20(assets[0]).safeTransfer(owner(), borrowTokenBalance - flashRepayAmount);
         }
 
         return true;
